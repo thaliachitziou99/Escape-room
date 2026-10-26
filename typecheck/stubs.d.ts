@@ -33,3 +33,4 @@ declare module 'jose' { export const SignJWT: any }
 declare module 'qrcode' { const q: any; export default q }
 declare module 'server-only' {}
 declare module 'node:crypto' { export function createHmac(a: string, k: string): any; export function randomBytes(n: number): any; export function randomInt(a: number, b: number): number }
+declare module '*.css';
