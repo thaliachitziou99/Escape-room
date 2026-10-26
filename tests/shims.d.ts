@@ -7,6 +7,8 @@ declare module 'node:assert/strict' {
     notEqual(a: unknown, b: unknown, m?: string): void;
     deepEqual(a: unknown, b: unknown, m?: string): void;
     notDeepEqual(a: unknown, b: unknown, m?: string): void;
+    throws(fn: () => unknown, e?: unknown, m?: string): void;
+    match(s: string, re: RegExp, m?: string): void;
   }
   const assert: Assert;
   export default assert;
@@ -15,4 +17,7 @@ declare module 'node:fs' {
   export function existsSync(p: string | URL): boolean;
   export function readFileSync(p: string | URL, enc: 'utf8'): string;
   export function readdirSync(p: string | URL, o: { withFileTypes: true }): { name: string; isDirectory(): boolean }[];
+}
+declare module 'node:crypto' {
+  export function createHash(alg: string): { update(d: string): { digest(enc: 'hex'): string } };
 }

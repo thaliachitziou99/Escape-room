@@ -29,7 +29,7 @@ export function Touchpad({ disabled, onMove, onTap }: Props) {
     <div ref={el} role="application" aria-label="Touchpad" aria-disabled={disabled}
       className="relative h-full w-full select-none rounded-xl border border-white/10 bg-[#121826]"
       style={{ touchAction: 'none', userSelect: 'none', WebkitUserSelect: 'none', opacity: disabled ? 0.4 : 1 }}
-      onContextMenu={(e) => e.preventDefault()}
+      onContextMenu={(e: { preventDefault(): void }) => e.preventDefault()}
       onPointerDown={(e) => {
         if (disabled || g.current.id !== -1) return;
         e.currentTarget.setPointerCapture?.(e.pointerId);
