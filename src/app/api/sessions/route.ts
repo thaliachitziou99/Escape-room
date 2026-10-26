@@ -5,9 +5,13 @@ import {
   UUID_RE, PAIRING_TTL_MS, newCredential, newPairingCode,
   hashCode, hashCredential, setCredentialCookie, originOk, fail, ok,
 } from '@/lib/security';
+import { allow, clientKey } from '@/lib/rate-limit';
+import { logOps } from '@/lib/log';
 
 export async function POST(req: Request) {
   if (!originOk(req)) return fail('bad_origin', 'Μη έγκυρο αίτημα.', 403);
+
+  if (!(await allow(`create:${clientKey(req)}`, 10, 60))) return fail('rate_limited', 'Πάρα πολλές προσπάθειες. Περίμενε λίγο και δοκίμασε ξανά.', 429);
 
   let body: unknown;
   try { body = await req.json(); } catch { return fail('bad_json', 'Μη έγκυρο αίτημα.', 400); }
@@ -39,7 +43,7 @@ export async function POST(req: Request) {
     p_code_hash: hashCode(sessionId, code),
     p_code_expires: expires.toISOString(),
   });
-  if (error) return fail('create_failed', 'Η δημιουργία παιχνιδιού απέτυχε. Προσπάθησε ξανά.', 500);
+  if (error) { logOps('error', 'session_create_failed', { pgcode: error.code }); return fail('create_failed', 'Η δημιουργία παιχνιδιού απέτυχε. Προσπάθησε ξανά.', 500); }
 
   const res = ok({ sessionId, pairingCode: code, pairingExpiresAt: expires.toISOString() }, 201);
   setCredentialCookie(res as NextResponse, 'display', sessionId, displayCred);

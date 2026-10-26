@@ -4,6 +4,7 @@ import { checkAnswer, publicPuzzle, sanitizeAnswer, validateSecrets } from './pu
 import { findCombination } from './inventory.ts';
 import { buildFinalResult } from './scoring.ts';
 import { buildJournal } from './journal.ts';
+import { roomView } from './room-view.ts';
 import type {
   ControllerMode, DomainEvent, Effect, EngineResult, GameAction, GameState, GameStatus, InteractiveObjectDefinition, RoomDefinition,
   StoryDefinition, StorySecrets, Trigger,
@@ -82,6 +83,8 @@ export function clientView(s: GameState, story: StoryDefinition) {
     mode: deriveMode(s), state: s, journal: buildJournal(s, story),
     items: s.inventory.map((id) => story.items.find((i) => i.id === id)).filter((i) => !!i),
     puzzle: p ? publicPuzzle(p) : null,
+    room: roomView(s, story),
+    ending: s.status === 'completed' ? story.ending : null,
   };
 }
 

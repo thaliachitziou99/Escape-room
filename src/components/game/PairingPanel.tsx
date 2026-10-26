@@ -60,20 +60,25 @@ export function PairingPanel({ sessionId }: { sessionId: string }) {
   };
 
   const paired = !!status?.controllerPaired;
+  useEffect(() => { // the TV moves on by itself as soon as the phone is connected
+    if (!paired || window.location.pathname.startsWith('/play/')) return;
+    const t = setTimeout(() => window.location.assign(`/play/${sessionId}`), 1200);
+    return () => clearTimeout(t);
+  }, [paired, sessionId]);
   const expired = status?.status === 'expired';
   return (
     <section className="grid place-items-center gap-4 p-6 text-center text-[#F2F0EA]" aria-live="polite">
       {expired ? <p className="text-[#B94A48]">Το παιχνίδι έληξε.</p> : paired ? (
         <>
           <h2 className="text-3xl text-[#5D9B80]" style={{ fontFamily: 'Georgia, serif' }}>Το χειριστήριο συνδέθηκε</h2>
-          <button className="rounded bg-[#C7A76C] px-6 py-3 font-medium text-[#1a1405]" disabled>Έναρξη (Μέρος 3)</button>
+          <a href={`/play/${sessionId}`} className="rounded bg-[#C7A76C] px-6 py-3 font-medium text-[#1a1405]">Συνέχεια στο παιχνίδι</a>
         </>
       ) : (
         <>
           <h2 className="text-2xl" style={{ fontFamily: 'Georgia, serif' }}>Σκάναρε το QR με το κινητό σου</h2>
           {pairing && qr ? <img src={qr} alt="QR κωδικός σύνδεσης" width={240} height={240} className="rounded bg-white p-2" />
             : <p className="text-[#9CA7B8]">Δεν υπάρχει κωδικός σε αυτή τη συσκευή. Ζήτησε νέο.</p>}
-          {pairing && <p className="text-4xl tracking-[0.4em]">{pairing.code}</p>}
+          {pairing && <p data-testid="pairing-code" className="text-4xl tracking-[0.4em]">{pairing.code}</p>}
           {pairing && <p className="text-sm text-[#9CA7B8]">{left > 0 ? `Λήγει σε ${Math.floor(left / 60)}:${String(left % 60).padStart(2, '0')}` : 'Ο κωδικός έληξε'}</p>}
           <div className="flex gap-3">
             <button onClick={refresh} className="rounded border border-white/20 px-4 py-2">Νέος κωδικός</button>

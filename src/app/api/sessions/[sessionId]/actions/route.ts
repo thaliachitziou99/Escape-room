@@ -2,8 +2,12 @@ import { supabaseAdmin } from '@/lib/supabase/admin';
 import { authorizeParticipant } from '@/lib/auth';
 import { UUID_RE, originOk, fail, ok } from '@/lib/security';
 import { applyGameAction, clientView, parseClientAction } from '@/features/game-engine/engine';
+import { cuesFor } from '@/features/game-engine/cues';
 import { loadGameSession } from '../../_lib/game';
+import { allow } from '@/lib/rate-limit';
+import { logOps } from '@/lib/log';
 
+const DISPLAY_ACTIONS = new Set(['START', 'INTERACT_AT', 'USE_ITEM']);
 const STATUS: Record<string, number> = { conflict: 409, invalid_state: 409 };
 
 // UNVERIFIED against a real database. The engine is tested; this wiring is not.
@@ -14,14 +18,17 @@ export async function POST(req: Request, ctx: { params: Promise<{ sessionId: str
   const who = await authorizeParticipant(sessionId);
   if (!who) return fail('unauthorized', 'Η σύνδεση δεν είναι πλέον έγκυρη. Συνδέσου ξανά.', 401);
 
+  if (!(await allow(`act:${sessionId}`, 240, 60))) return fail('rate_limited', 'Πάρα πολλές ενέργειες. Περίμενε λίγο.', 429);
+
   let body: { action?: unknown; idempotencyKey?: unknown };
   try { body = await req.json(); } catch { return fail('bad_json', 'Μη έγκυρο αίτημα.', 400); }
   const action = parseClientAction(body.action); // INTERACT_OBJECT, flags, items, solved-state are impossible to send
   const key = body.idempotencyKey;
   if (!action) return fail('invalid_action', 'Μη έγκυρη ενέργεια.', 400);
   if (typeof key !== 'string' || key.length < 8 || key.length > 64) return fail('invalid_key', 'Μη έγκυρο αίτημα.', 400);
-  // Gameplay comes from the controller; the display may only START.
-  if (who.role === 'display' && action.type !== 'START') return fail('forbidden', 'Δεν επιτρέπεται.', 403);
+  // Gameplay comes from the controller. The display owns the cursor position, so besides START it may only forward the two
+  // position-bearing actions (the controller's tap/use-item) — nothing that grants, solves or navigates.
+  if (who.role === 'display' && !DISPLAY_ACTIONS.has(action.type)) return fail('forbidden', 'Δεν επιτρέπεται.', 403);
 
   const g = await loadGameSession(sessionId);
   if (!g || g.status === 'expired' || g.status === 'completed' || new Date(g.expiresAt) < new Date()) return fail('no_session', 'Το παιχνίδι έχει λήξει.', 404);
@@ -40,10 +47,11 @@ export async function POST(req: Request, ctx: { params: Promise<{ sessionId: str
   const now = new Date().toISOString();
   const { data: upd, error } = await db.from('game_sessions').update({
     status: r.state.status, game_state: r.state, state_version: next,
+    last_feedback: { seq: next, lines: r.feedback.slice(0, 8).map((l) => l.slice(0, 400)), result: r.puzzleResult ?? null, ...cuesFor(r.events, g.story) },
     ...(action.type === 'START' && !g.startedAt ? { started_at: now } : {}),
     ...(r.state.status === 'completed' ? { completed_at: now } : {}),
   }).eq('id', sessionId).eq('state_version', g.stateVersion).select('state_version'); // compare-and-set
-  if (error) return fail('action_failed', 'Η ενέργεια απέτυχε. Προσπάθησε ξανά.', 500);
+  if (error) { logOps('error', 'game_action_error', { type: action.type, pgcode: error.code }); return fail('action_failed', 'Η ενέργεια απέτυχε. Προσπάθησε ξανά.', 500); }
   if (!upd?.length) return fail('conflict', 'Το παιχνίδι άλλαξε. Προσπάθησε ξανά.', 409);
 
   // Event log: types only. Never the submitted answer.
@@ -51,5 +59,5 @@ export async function POST(req: Request, ctx: { params: Promise<{ sessionId: str
     session_id: sessionId, event_type: action.type,
     event_payload: { events: r.events.map((e) => e.type), puzzleResult: r.puzzleResult ?? null }, state_version: next, idempotency_key: key,
   });
-  return ok({ stateVersion: next, feedback: r.feedback, puzzleResult: r.puzzleResult ?? null, ...clientView({ ...r.state, version: next }, g.story) });
+  return ok({ stateVersion: next, feedback: r.feedback, puzzleResult: r.puzzleResult ?? null, cues: cuesFor(r.events, g.story), ...clientView({ ...r.state, version: next }, g.story) });
 }

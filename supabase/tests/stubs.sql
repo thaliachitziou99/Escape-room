@@ -17,3 +17,5 @@ create schema if not exists realtime;
 create table if not exists realtime.messages (id bigserial primary key, extension text, topic text);
 alter table realtime.messages enable row level security;
 create or replace function realtime.topic() returns text language sql stable as $$ select nullif(current_setting('realtime.topic', true), '') $$;
+grant usage on schema realtime to anon, authenticated, service_role;
+grant select, insert on realtime.messages to anon, authenticated;

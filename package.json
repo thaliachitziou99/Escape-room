@@ -1,14 +1,19 @@
 {
   "name": "escape-13",
   "private": true,
-  "version": "0.7.0",
+  "version": "0.8.0",
   "scripts": {
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
     "test": "node --test tests/*.test.ts",
     "typecheck:core": "tsc -p tsconfig.core.json",
-    "test:db": "supabase/tests/run.sh"
+    "test:db": "supabase/tests/run.sh",
+    "typecheck:app": "tsc -p tsconfig.app.json",
+    "test:integration": "node --import ./tests/integration/register.mjs --test tests/integration/api.test.ts",
+    "bench": "node scripts/bench.ts",
+    "audio:gen": "node scripts/gen-placeholder-audio.ts",
+    "test:e2e": "playwright test"
   },
   "dependencies": {
     "@supabase/ssr": "^0.5.2",
@@ -29,6 +34,7 @@
     "@types/react": "^19.0.0",
     "@types/react-dom": "^19.0.0",
     "tailwindcss": "^4.0.0",
-    "typescript": "^5.6.0"
+    "typescript": "^5.6.0",
+    "@playwright/test": "^1.48.0"
   }
 }

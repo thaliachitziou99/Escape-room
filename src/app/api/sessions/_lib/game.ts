@@ -7,13 +7,14 @@ import type { GameState, StoryDefinition, StorySecrets } from '@/features/game-e
 
 export type LoadedSession = {
   status: string; expiresAt: string; stateVersion: number; startedAt: string | null;
+  lastFeedback: unknown;
   story: StoryDefinition; secrets: StorySecrets; state: GameState;
 };
 
 export async function loadGameSession(sessionId: string): Promise<LoadedSession | null> {
   const db = supabaseAdmin();
   const { data: s } = await db.from('game_sessions')
-    .select('status,game_state,state_version,expires_at,started_at,story_version_id,stories(slug)').eq('id', sessionId).maybeSingle();
+    .select('status,game_state,state_version,expires_at,started_at,last_feedback,story_version_id,stories(slug)').eq('id', sessionId).maybeSingle();
   if (!s) return null;
   const slug = (s.stories as unknown as { slug: string } | null)?.slug;
   // PINNED: a session plays the exact version it started with. Sessions without a pin (created before Part 7) use the built-in story.
@@ -22,7 +23,7 @@ export async function loadGameSession(sessionId: string): Promise<LoadedSession 
   const base = createInitialState(sessionId, loaded.story);
   // Validated load: a corrupt row degrades to defaults instead of producing an unplayable state.
   const state = normalizeState(s.game_state, { ...base, version: s.state_version }, loaded.story);
-  return { status: s.status, expiresAt: s.expires_at, stateVersion: s.state_version, startedAt: s.started_at, ...loaded, state };
+  return { status: s.status, expiresAt: s.expires_at, stateVersion: s.state_version, startedAt: s.started_at, lastFeedback: s.last_feedback ?? null, ...loaded, state };
 }
 
 // Published versions are immutable, so caching by id is safe. Secrets come from a table only the service role can read.

@@ -9,7 +9,10 @@ declare module 'react' {
   export function useRef<T>(i: T | null): { current: T };
   export function useMemo<T>(fn: () => T, deps: unknown[]): T;
   export function useCallback<T extends (...a: any[]) => any>(fn: T, deps: unknown[]): T;
+  export function createContext<T>(d: T): { Provider: any; Consumer: any; _t?: T };
+  export function useContext<T>(c: { _t?: T }): T;
 }
+declare module 'motion/react' { export const motion: any; export const AnimatePresence: any; export const MotionConfig: any }
 declare namespace React { type PointerEvent = any; type FormEvent = any; type ReactNode = any }
 type H = (e: any) => void;
 type El = { [k: string]: any; onChange?: H; onClick?: H; onKeyDown?: H; onPointerDown?: H; onPointerMove?: H; onPointerUp?: H; onPointerCancel?: H; onFocus?: H; onMouseEnter?: H; onMouseLeave?: H; onSubmit?: H };
@@ -26,7 +29,7 @@ declare module 'next/server' {
 type Row = any[] & { [k: string]: any };
 type Res = { data: any; error: { message: string; code?: string } | null; count?: number | null };
 type Q = { [k: string]: (...a: any[]) => Q } & PromiseLike<Res>;
-type SBClient = { from(t: string): Q; rpc(f: string, a?: any): Q; storage: { from(b: string): any }; auth: any };
+type SBClient = { realtime: any; channel(...a: any[]): any; removeChannel(...a: any[]): any; from(t: string): Q; rpc(f: string, a?: any): Q; storage: { from(b: string): any }; auth: any };
 declare module '@supabase/supabase-js' { export function createClient(...a: any[]): SBClient }
 declare module '@supabase/ssr' { export function createServerClient(...a: any[]): SBClient; export function createBrowserClient(...a: any[]): any }
 declare module 'jose' { export const SignJWT: any }

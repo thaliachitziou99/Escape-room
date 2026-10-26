@@ -16,23 +16,25 @@ export function Touchpad({ disabled, onMove, onTap }: Props) {
   const cb = useRef({ onMove, onTap });
   cb.current = { onMove, onTap };
 
-  useEffect(() => { // flush coalesced deltas on a timer; no React state per pointer event
-    const t = setInterval(() => {
-      const s = g.current, r = el.current?.getBoundingClientRect();
-      if ((s.ax || s.ay) && r) { cb.current.onMove(s.ax / r.width, s.ay / r.height); s.ax = s.ay = 0; }
-    }, SEND_MS);
-    return () => clearInterval(t);
-  }, []);
+  const timer = useRef<ReturnType<typeof setInterval> | null>(null);
+  const flush = () => { // coalesced deltas; no React state per pointer event
+    const st = g.current, r = el.current?.getBoundingClientRect();
+    if ((st.ax || st.ay) && r) { cb.current.onMove(st.ax / r.width, st.ay / r.height); st.ax = st.ay = 0; }
+  };
+  // the timer exists only while a finger is down: an idle phone wakes nothing up
+  const stop = () => { if (timer.current) { clearInterval(timer.current); timer.current = null; } };
+  useEffect(() => stop, []);
 
-  const reset = () => { g.current.id = -1; g.current.ax = g.current.ay = 0; };
+  const reset = () => { flush(); stop(); g.current.id = -1; g.current.ax = g.current.ay = 0; };
   return (
-    <div ref={el} role="application" aria-label="Touchpad" aria-disabled={disabled}
+    <div ref={el} role="application" aria-label="Επιφάνεια αφής: κινεί τον δείκτη στην οθόνη, ένα άγγιγμα επιλέγει" aria-disabled={disabled}
       className="relative h-full w-full select-none rounded-xl border border-white/10 bg-[#121826]"
       style={{ touchAction: 'none', userSelect: 'none', WebkitUserSelect: 'none', opacity: disabled ? 0.4 : 1 }}
       onContextMenu={(e: { preventDefault(): void }) => e.preventDefault()}
       onPointerDown={(e) => {
         if (disabled || g.current.id !== -1) return;
         e.currentTarget.setPointerCapture?.(e.pointerId);
+        if (!timer.current) timer.current = setInterval(flush, SEND_MS);
         Object.assign(g.current, { id: e.pointerId, x: e.clientX, y: e.clientY, sx: e.clientX, sy: e.clientY, t0: performance.now(), moved: false, ax: 0, ay: 0 });
       }}
       onPointerMove={(e) => {

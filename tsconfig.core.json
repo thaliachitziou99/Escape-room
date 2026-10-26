@@ -13,6 +13,7 @@
   "src/features/game-engine/**/*.ts",
   "src/data/lobby.ts",
   "tests/*.ts",
-  "src/features/admin/*.ts"
+  "src/features/admin/*.ts",
+  "src/features/runtime/*.ts"
  ]
 }
