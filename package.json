@@ -13,7 +13,8 @@
     "test:integration": "node --import ./tests/integration/register.mjs --test tests/integration/api.test.ts",
     "bench": "node scripts/bench.ts",
     "audio:gen": "node scripts/gen-placeholder-audio.ts",
-    "test:e2e": "playwright test"
+    "test:e2e": "playwright test",
+    "test:browser": "node --no-warnings --import ./tests/integration/register.mjs tests/browser/run.mjs"
   },
   "dependencies": {
     "@supabase/ssr": "^0.5.2",

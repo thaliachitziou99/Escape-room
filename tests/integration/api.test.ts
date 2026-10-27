@@ -25,7 +25,7 @@ const sqlFile = (f: string) => sh(['-d', DB, '-o', '/dev/null', '-f', f]);
 
 // ---------- fresh database: stubs + every migration ----------
 sh(['-d', 'postgres', '-c', `drop database if exists ${DB}`]); sh(['-d', 'postgres', '-c', `create database ${DB}`]);
-for (const f of ['supabase/tests/stubs.sql', ...['0001_sessions_pairing', '0002_refresh_cancel', '0003_actions_realtime', '0004_admin_content', '0005_draft_save_load', '0006_ratelimit_cleanup', '0007_last_feedback'].map((n) => `supabase/migrations/${n}.sql`)]) sqlFile(f);
+for (const f of ['supabase/tests/stubs.sql', ...['0001_sessions_pairing', '0002_refresh_cancel', '0003_actions_realtime', '0004_admin_content', '0005_draft_save_load', '0006_ratelimit_cleanup', '0007_last_feedback', '0008_schedule_cleanup'].map((n) => `supabase/migrations/${n}.sql`)]) sqlFile(f);
 
 // ---------- route handlers (dynamic: env must be set first) ----------
 const R = {

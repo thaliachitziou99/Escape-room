@@ -28,7 +28,9 @@ export function PairingPanel({ sessionId }: { sessionId: string }) {
 
   useEffect(() => {
     if (!pairing) return;
-    const t = setInterval(() => setLeft(Math.max(0, Math.round((new Date(pairing.expiresAt).getTime() - Date.now()) / 1000))), 500);
+    const tick = () => setLeft(Math.max(0, Math.round((new Date(pairing.expiresAt).getTime() - Date.now()) / 1000)));
+    tick(); // no "expired" flash before the first interval tick
+    const t = setInterval(tick, 500);
     return () => clearInterval(t);
   }, [pairing]);
 
